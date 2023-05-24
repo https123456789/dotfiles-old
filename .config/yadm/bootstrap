@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Make sure to be in the home directory
+cd "$HOME"
+
+# Detect the system info
+system_type=$(uname -s)
+has_apt=$(command -v apt 2>&1 >/dev/null; [ "$?" = "0" ] && (echo 1) || (echo 0))
+
+check_for_command() {
+    if which $1 2>&1 >/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+install_msg() {
+    gum style --bold --foreground "#0373fc" "$*"
+}
+
+already_installed() {
+    gum style --bold --foreground "#0398fc" "Yay, $* is already installed!"
+}
+
+# Linux Only
+if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
+    # Perform generic apt update
+    echo "Updating apt..."
+    #sudo apt update -qqq
+
+    if ! check_for_command gum; then
+        echo "Installing gum..."
+
+        # Add the repository for gum
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://repo.charm.sh/apt/gpg.key | \
+            sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg --batch --yes
+        echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | \
+            sudo tee /etc/apt/sources.list.d/charm.list >/dev/null
+        sudo apt update -qqq && sudo apt install gum -qqq
+
+        # Verify install
+        if ! check_for_command gum; then
+            echo "Failed to install gum!" 1>&2
+            exit 1
+        fi
+    else
+        already_installed gum
+    fi
+
+    if ! check_for_command zsh; then
+        install_msg "Installing zsh..."
+        apt install zsh -qqq  # Install it
+
+        # Verify install
+        if ! check_for_command zsh; then
+            echo "Failed to install zsh!" 1>&2
+            exit 1
+        fi
+
+        # Set zsh to default shell
+        chsh -s $(command -v zsh)
+
+        # Install OhMyZsh
+        install_msg "Installing OhMyZsh..."
+
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    else
+        already_installed zsh
+    fi
+
+    if ! check_for_command nvimm; then
+        install_msg "Installing NeoVim..."
+    else
+        already_installed NeoVim
+    fi
+fi

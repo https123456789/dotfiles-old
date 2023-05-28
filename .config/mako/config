@@ -1,0 +1,22 @@
+default-timeout=5000
+max-history=50
+
+# Borders
+border-radius=0
+border-size=0
+
+# Sizing
+height=500
+
+[urgency=low]
+border-color=#00000000
+background-color=#555555f0
+
+[urgency=normal]
+border-color=#00000000
+background-color=#327da8f0
+
+[urgency=high]
+border-color=#ba2323
+background-color=#ba2323f0
+default-timeout=0

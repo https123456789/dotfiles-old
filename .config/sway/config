@@ -212,16 +212,20 @@ mode "resize" {
 }
 bindsym $mod+r mode "resize"
 
-bindsym $mod+Prior exec light -A 100 -s sysfs/leds/platform::kbd_backlight && notify-send "KeyBoard: $(light -G -s sysfs/leds/platform::kbd_backlight)"
-bindsym $mod+Next exec light -U 100 -s sysfs/leds/platform::kbd_backlight && notify-send "KeyBoard: $(light -G -s sysfs/leds/platform::kbd_backlight)"
+bindsym $mod+Prior exec light -A 100 -s sysfs/leds/platform::kbd_backlight && notify-send -u low "KeyBoard: $(light -G -s sysfs/leds/platform::kbd_backlight)"
+bindsym $mod+Next exec light -U 100 -s sysfs/leds/platform::kbd_backlight && notify-send -u low "KeyBoard: $(light -G -s sysfs/leds/platform::kbd_backlight)"
 
-bindsym XF86MonBrightnessUp exec light -A 10 -s sysfs/backlight/intel_backlight && notify-send "Screen: $(light -G -s sysfs/backlight/intel_backlight)"
-bindsym XF86MonBrightnessDown exec light -U 10 -s sysfs/backlight/intel_backlight && notify-send "Screen: $(light -G -s sysfs/backlight/intel_backlight)"
+bindsym XF86MonBrightnessUp exec light -A 10 -s sysfs/backlight/intel_backlight && notify-send -u low "Screen: $(light -G -s sysfs/backlight/intel_backlight)"
+bindsym XF86MonBrightnessDown exec light -U 10 -s sysfs/backlight/intel_backlight && notify-send -u low "Screen: $(light -G -s sysfs/backlight/intel_backlight)"
 
 # Volume
-bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
-bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
-bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+set $vol-notif-time 400
+bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle && \
+    notify-send -u low "Volume: $(pactl get-sink-mute @DEFAULT_SINK@)" -c sway-volume-bindings -t $vol-notif-time
+bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5% && \
+    notify-send -u low "Volume: $(amixer sget Master | grep 'Right:' | awk -F'[][]' '{ print $2 }')" -c sway-volume-bindings -t $vol-notif-time
+bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5% && \
+    notify-send -u low "Volume: $(amixer sget Master | grep 'Right:' | awk -F'[][]' '{ print $2 }')" -c sway-volume-bindings -t $vol-notif-time
 
 gaps inner 10
 #default_border none

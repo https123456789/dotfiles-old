@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Set some basic variable definitions
+
+# All the apt packages needed in order to continue 
+apt_pkgs_required_base=("git" "build-essential" "python3")
+
+# Colors
+color_install="#0373fc"
+color_setup="#07ad02"
+color_alinstall="#0398fc"
+color_install_step="#888888"
+
 # Make sure to be in the home directory
 cd "$HOME"
 
@@ -15,25 +26,46 @@ check_for_command() {
     fi
 }
 
-install_msg() {
-    gum style --bold --foreground "#0373fc" "$*"
+state_reset() {
+    cd $HOME
 }
 
-setup_msg() {
-    gum style --bold --foreground "#07ad02" "$*"
+install_msg() {
+    gum style --bold --foreground $color_install "$*"
+}
+
+install_step_msg() {
+    gum style --foreground $color_install_step "[STEP] $*"
+}
+
+install_step_spin() {
+    gum spin --title.foreground=$color_install_step --title "$1" "${@:2}"
 }
 
 already_installed() {
-    gum style --bold --foreground "#0398fc" "Yay, $* is already installed!"
+    gum style --bold --foreground $color_alinstall "Yay, $* is already installed!"
 }
 
-echo "Installing basic system programs."
+setup_msg() {
+    gum style --bold --foreground $color_setup "$*"
+}
+
+# Make sure a source installs directory exists
+mkdir -p "$HOME/source-installs"
 
 # Linux Only
 if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
     # Perform generic apt update
     echo "Updating apt..."
-    #sudo apt update -qqq
+    # sudo apt update -qqq
+
+    # Install the base packages
+    echo -n "Installing basic packages needed for rest of install... "
+    # sudo apt install ${apt_pkgs_required_base[*]} -qqq
+    echo "Done"
+
+    # Install everything else
+    echo -e "\x1b[1m----- Install -----\x1b[0m"
 
     if ! check_for_command gum; then
         echo "Installing gum..."
@@ -76,22 +108,100 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
         already_installed zsh
     fi
 
-    if ! check_for_command nvimm; then
+    if ! check_for_command nvim; then
         install_msg "Installing NeoVim..."
-        mkdir -p "$HOME/source-installs"
-        gum spin --title "Installing dependencies..." -- sudo apt install ninja-build gettext cmake unzip curl -qqq
-        gum spin --title "Cloning..." -- git clone https://github.com/neovim/neovim "$HOME/source-installs/neovim"
+        
+        # Install from source
+        install_step_spin "Installing dependencies..." -- sudo apt install ninja-build gettext cmake unzip curl -qqq
+        install_step_spin "Cloning..." -- git clone https://github.com/neovim/neovim "$HOME/source-installs/neovim"
         cd "$HOME/source-installs/neovim"
         git checkout stable -q
-        gum spin --title "Building..." -- make CMAKE_BUILD_TYPE=RelWithDebInfo
-        gum spin --title "Installing..." -- sudo make install
+        install_step_spin "Building..." -- make CMAKE_BUILD_TYPE=RelWithDebInfo
+        install_step_spin "Installing..." -- sudo make install
+
+        # Reset the enviorment
+        state_reset
     else
         already_installed NeoVim
     fi
+
+    if ! check_for_command sway; then
+        install_msg "Installing sway..."
+
+        # Install sway itself
+        install_step_spin "Installing swaywm..." -- sudo apt install sway -qqq
+
+        # Install everything used in the sway config
+        install_step_spin "Installing swaybg..." -- sudo apt install swaybgecho -qqq
+        install_step_spin "Installing dmenu..." -- sudo apt install suckless-tools -qqq
+        install_step_spin "Installing tofi..." -- sudo apt install tofi -qqq
+        install_step_spin "Installing i3blocks..." -- sudo apt install i3blocks -qqq
+        install_step_msg "Installing swaylock-effects (source install)..."
+        install_step_spin "Installing dependencies..." -- sudo apt install \
+            meson wayland wayland-protocols libxkbcommon cairo libpam0g-dev -qqq
+        install_step_spin "Cloning repo (mortie/swaylock-effects)..." -- \
+            git clone https://github.com/mortie/swaylock-effects $HOME/source-installs/swaylock-effects
+        cd $HOME/source-installs/swaylock-effects
+        install_step_spin "Running 'meson build'..." -- \
+            meson build
+        install_step_spin "Running 'ninja -C build'..." -- \
+            ninja -C build
+        install_step_spin "Running 'sudo ninja -C build install'..." -- \
+            sudo ninja -C build install
+        sudo chmod a+s /usr/local/bin/swaylock
+
+        # Install wallpapers
+        install_step_msg "Installing wallpapers..."
+        sudo ln -sf wallpapers/space.jpg /usr/share/backgrounds/space.jpg
+
+        # Reset the enviorment
+        state_reset
+    else
+        already_installed sway
+    fi
+
+    if ! check_for_command kitty; then
+        install_msg "Installing Kitty Terminal..."
+        install_step_spin "Installing..." -- sudo apt install kitty -qqq
+    else
+        already_installed Kitty Terminal
+    fi
+
+    if ! check_for_command google-chrome-beta; then
+        install_msg "Installing Google Chrome (Beta)..."
+
+        # Add google's repo to apt's sources
+        install_step_spin "Downloading apt key..." -- \
+            curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | \
+            sudo tee /usr/share/keyrings/google-chrome-beta.pub
+        install_step_spin "Adding repository to sources..." -- \
+            echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | \
+            sudo tee /etc/apt/sources.list.d/chrome.list
+
+        # Update apt's cache
+        install_step_spin "Updating apt cache..." -- sudo apt update -qqq
+
+        # Install it
+        install_step_spin "Installing binary..." -- sudo apt install google-chrome-beta -qqq
+    else
+        already_installed "Google Chrome (Beta)"
+    fi
+
+    if ! check_for_command gtk-launch && ! check_for_command gtk4-launch; then
+        install_msg "Installing Gtk[2,3,4]..."
+        install_step_spin "Installing packages..." -- sudo apt install \
+            gtk2-engines-breeze libgtk-4-common libgtk-3.0-common libgtk-2.0-common
+    else
+        already_installed "Gtk[2,3,4]"
+    fi
 fi
+
+gum style --bold -- "----- Init -----"
 
 gum style --bold "Init yadm submodules..."
 yadm submodule update --recursive --init
+
+gum style --bold -- "----- Setup -----"
 
 if [ "$system_type" = "Linux" ]; then
     setup_msg "Setting up NeoVim..."
@@ -99,6 +209,9 @@ if [ "$system_type" = "Linux" ]; then
     gum spin --title "Installing packer.nvim..." -- \
         git clone --depth 1 https://github.com/wbthomason/packer.nvim \
         ~/.local/share/nvim/site/pack/packer/start/packer.nvim
+
+    setup_msg "Setting up cronjobs..."
+    crontab -u $(whoami) crontab
 fi
 
 gum style --foreground "#9f34eb" "Bootstrap complete!"

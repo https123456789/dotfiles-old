@@ -1,0 +1,2 @@
+# Update cargo index
+30 * * * * zsh $HOME/cronjobs/update-cargo.sh

@@ -11,6 +11,9 @@ color_setup="#07ad02"
 color_alinstall="#0398fc"
 color_install_step="#888888"
 
+# Flags
+test "${BOOTSTRAP_FAIL_CHECKS:=0}"
+
 # Make sure to be in the home directory
 cd "$HOME"
 
@@ -20,11 +23,11 @@ has_apt=$(command -v apt 2>&1 >/dev/null; [ "$?" = "0" ] && (echo 1) || (echo 0)
 
 check_for_install() {
     # Make it so you can forcibly fail checks
-    if [ "$BOOTSTRAP_FAIL_CHECKS" = "1" ]; then
+    if (( $BOOTSTRAP_FAIL_CHECKS == 1 )); then
         return 1
     fi
 
-    return check_for_command $1
+    return $(check_for_command $1)
 }
 
 check_for_command() {

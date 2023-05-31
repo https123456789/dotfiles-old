@@ -30,6 +30,7 @@ include /etc/sway/config-vars.d/*
 ### Output configuration
 #
 # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
+output * bg #000000 solid_color
 output * bg /usr/share/backgrounds/space.jpg fill
 #
 # Example configuration:

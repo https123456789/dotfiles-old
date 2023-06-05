@@ -1,2 +1,5 @@
 # Update cargo index
 30 * * * * zsh $HOME/cronjobs/update-cargo.sh
+
+# Battery Notifications
+* * * * * zsh $HOME/source-installs/battery-health-notifications/battery-health-notifications

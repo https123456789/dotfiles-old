@@ -3,7 +3,7 @@
 # Set some basic variable definitions
 
 # All the apt packages needed in order to continue 
-apt_pkgs_required_base=("git" "build-essential" "python3")
+apt_pkgs_required_base=("git" "build-essential" "python3" "libnotify-bin")
 
 # Colors
 color_install="#0373fc"
@@ -74,11 +74,11 @@ mkdir -p "$HOME/source-installs"
 if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
     # Perform generic apt update
     echo "Updating apt..."
-    sudo apt update -qqq
+    # sudo apt update -qqq
 
     # Install the base packages
     echo -n "Installing basic packages needed for rest of install... "
-    sudo apt install ${apt_pkgs_required_base[*]} -qqq
+    # sudo apt install ${apt_pkgs_required_base[*]} -qqq
     echo "Done"
 
     # Install everything else
@@ -213,6 +213,19 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
             gtk2-engines-breeze libgtk-4-common libgtk-3.0-common libgtk-2.0-common
     else
         already_installed "Gtk[2,3,4]"
+    fi
+
+    if [ ! -d $HOME/source-installs/battery-health-notifications ]; then
+        install_msg "Installing battery health notifications script..."
+        cd $HOME/source-installs
+        gum spin --title "Cloning repository..." -- \
+            git clone https://github.com/https123456789/battery-health-notifications.git
+        chown ben battery-health-notifications -R
+        
+        # Reset the script's state
+        state_reset
+    else
+        already_installed "battery health notifications script"
     fi
 fi
 

@@ -51,7 +51,8 @@ install_step_msg() {
 }
 
 install_step_spin() {
-    gum spin --title.foreground=$color_install_step --title "$1" "${@:2}"
+    gum spin --title.foreground=$color_install_step --title "[STEP] $1" "${@:2}"
+    install_step_msg "$1"
 }
 
 already_installed() {
@@ -74,11 +75,11 @@ mkdir -p "$HOME/source-installs"
 if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
     # Perform generic apt update
     echo "Updating apt..."
-    # sudo apt update -qqq
+    sudo apt update -qqq
 
     # Install the base packages
     echo -n "Installing basic packages needed for rest of install... "
-    # sudo apt install ${apt_pkgs_required_base[*]} -qqq
+    sudo apt install ${apt_pkgs_required_base[*]} -qqq
     echo "Done"
 
     # Install everything else
@@ -128,11 +129,13 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
     fi
 
     if ! check_for_install nvim; then
-        install_msg "Installing NeoVim..."
+        install_msg "Installing NeoVim (source install)..."
         
         # Install from source
         install_step_spin "Installing dependencies..." -- sudo apt install ninja-build gettext cmake unzip curl -qqq
-        install_step_spin "Cloning..." -- git clone https://github.com/neovim/neovim "$HOME/source-installs/neovim"
+        install_step_spin "Cloning..." -- \
+            git clone https://github.com/neovim/neovim "$HOME/source-installs/neovim"
+        chown ben neovim -R  # Make sure I own the dir
         cd "$HOME/source-installs/neovim"
         git checkout stable -q
         install_step_spin "Building..." -- make CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -216,16 +219,46 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
     fi
 
     if [ ! -d $HOME/source-installs/battery-health-notifications ]; then
-        install_msg "Installing battery health notifications script..."
+        install_msg "Installing battery health notifications script (source install)..."
         cd $HOME/source-installs
-        gum spin --title "Cloning repository..." -- \
+        install_step_spin "Cloning repository..." -- \
             git clone https://github.com/https123456789/battery-health-notifications.git
-        chown ben battery-health-notifications -R
+        chown ben battery-health-notifications -R  # Make sure I own the dir
         
         # Reset the script's state
         state_reset
     else
         already_installed "battery health notifications script"
+    fi
+
+    if  ! check_for_command cpulimit; then
+        install_msg "Installing cpulimit (source install)..."
+        cd $HOME/source-installs
+
+        # Clone the repo
+        install_step_spin "Cloning repository..." -- \
+            git clone https://github.com/HiGarfield/cpulimit
+        chown ben cpulimit -R  # Make sure I own the dir
+
+        # Build it
+        install_step_spin "Building..." -- make
+
+        if [ ! src/cpulimit ]; then
+            fatal "Failed to install cpulimit (can't build)!"
+        fi
+
+        # Add a symlink onto the path
+        install_step_msg "Installing..."
+        ln -sf $(realpath cpulimit/src/cpulimit) $HOME/.local/bin/cpulimit
+
+        if ! check_for_command cpulimit; then
+            fatal "Failed to install cpulimit (can't add to PATH)!"
+        fi
+
+        # Reset
+        state_reset
+    else
+        already_installed "cpulimit"
     fi
 fi
 

@@ -261,7 +261,9 @@ bindsym $mod+Escape exec swaylock \
     --timestr %H:%M
 
 # Notifications
-exec_always mako
+exec_always pkill swaync; swaync
+bindsym $mod+Shift+n exec swaync-client -t -sw
+bindsym $mod+Alt+n exec notify-send test
 
 # Make sure to reload zsh config
 exec_always source /home/ben/.zshrc
@@ -273,7 +275,7 @@ exec_always export XDG_CURRENT_DESKTOP="Sway"
 set $gnome-schema org.gnome.desktop.interface
 
 exec_always {
-    gsettings set $gnome-schema gtk-theme 'Tokyonight-Dark-BL'
+    gsettings set $gnome-schema gtk-theme 'Catppuccin-Mocha-Standard-Blue-Dark'
     # gsettings set $gnome-schema icon-theme 'Your icon theme'
     # gsettings set $gnome-schema cursor-theme 'Your cursor Theme'
     # gsettings set $gnome-schema font-name 'Your font name'

@@ -1,9 +1,24 @@
 #!/bin/bash
 
-# Set some basic variable definitions
+# This script is a YADM bootstrap program.
+#
+# General usage form: `sudo -Es yadm bootstrap`
+#
+# If you don't run it with sudo, your username won't be auto-detected so you will
+# need to set the SUDO_USER enviorment variable before running the script.
+
+# Detect the system info
+system_type=$(uname -s)
+has_apt=$(command -v apt 2>&1 >/dev/null; [ "$?" = "0" ] && (echo 1) || (echo 0))
+
+if [ "$system_type" != "Linux" ]; then
+    echo "'$system_type' is not supported!" >&2
+fi
 
 # All the apt packages needed in order to continue 
-apt_pkgs_required_base=("git" "build-essential" "python3" "libnotify-bin")
+apt_pkgs_required_base=(
+    "git" "build-essential" "python3" "libnotify-bin" "fonts-noto-color-emoji"
+)
 
 # Colors
 color_install="#0373fc"
@@ -11,19 +26,19 @@ color_setup="#07ad02"
 color_alinstall="#0398fc"
 color_install_step="#888888"
 
+# Username
+test "${SUDO_USER:=ben}"
+
 # Flags
 test "${BOOTSTRAP_FAIL_CHECKS:=0}"
 
 # Make sure to be in the home directory
 cd "$HOME"
 
-# Detect the system info
-system_type=$(uname -s)
-has_apt=$(command -v apt 2>&1 >/dev/null; [ "$?" = "0" ] && (echo 1) || (echo 0))
 
 check_for_install() {
     # Make it so you can forcibly fail checks
-    if (( $BOOTSTRAP_FAIL_CHECKS == 1 )); then
+    if [ "$BOOTSTRAP_FAIL_CHECKS" = "$1" ]; then
         return 1
     fi
 
@@ -68,32 +83,42 @@ fatal() {
     exit 1
 }
 
+
 # Make sure a source installs directory exists
 mkdir -p "$HOME/source-installs"
 
-# Linux Only
-if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
+echo -e "\nInfo:"
+echo -e "\tTarget User: $SUDO_USER"
+echo -e "\tSource install directory: $HOME/source-installs\n"
+
+# Make sure apt is present
+if [ "$has_apt" = "1" ]; then
     # Perform generic apt update
     echo "Updating apt..."
-    sudo apt update -qqq
+    # sudo apt update -qqq
 
     # Install the base packages
     echo -n "Installing basic packages needed for rest of install... "
-    sudo apt install ${apt_pkgs_required_base[*]} -qqq
+    # sudo apt install ${apt_pkgs_required_base[*]} -qqq
     echo "Done"
 
     # Install everything else
     echo -e "\x1b[1m----- Install -----\x1b[0m"
 
+    echo "👀 Looking for color... 👀"
+
     if ! check_for_install gum; then
         echo "Installing gum..."
 
         # Add the repository for gum
+        echo "[STEP] Downloading apt key..."
         sudo mkdir -p /etc/apt/keyrings
         curl -fsSL https://repo.charm.sh/apt/gpg.key | \
             sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg --batch --yes >/dev/null 2>&1
+        echo "[STEP] Adding repository to sources..."
         echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | \
             sudo tee /etc/apt/sources.list.d/charm.list >/dev/null
+        echo "[STEP] Installing package..."
         sudo apt update -qqq && sudo apt install gum -qqq
 
         # Verify install
@@ -103,6 +128,8 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
     else
         already_installed gum
     fi
+    
+    gum style --foreground "#ffff00" "🎉 Color found! 🎉"
 
     if ! check_for_install zsh; then
         install_msg "Installing zsh..."
@@ -128,6 +155,14 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
         already_installed zsh
     fi
 
+    if ! check_for_install node; then
+        install_msg "Installing NodeJS..."
+        install_step_spin "Installing node..." -- sudo apt install nodejs
+        install_step_spin "Installing npm..." -- sudo apt install npm
+    else
+        already_installed "NodeJS"
+    fi
+
     if ! check_for_install nvim; then
         install_msg "Installing NeoVim (source install)..."
         
@@ -135,7 +170,7 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
         install_step_spin "Installing dependencies..." -- sudo apt install ninja-build gettext cmake unzip curl -qqq
         install_step_spin "Cloning..." -- \
             git clone https://github.com/neovim/neovim "$HOME/source-installs/neovim"
-        chown ben neovim -R  # Make sure I own the dir
+        chown $SUDO_USER $HOME/source-installs/neovim -R  # Make sure I own the dir
         cd "$HOME/source-installs/neovim"
         git checkout stable -q
         install_step_spin "Building..." -- make CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -197,9 +232,9 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
         install_step_spin "Downloading apt key..." -- \
             curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | \
             sudo tee /usr/share/keyrings/google-chrome-beta.pub
-        install_step_spin "Adding repository to sources..." -- \
-            echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | \
-            sudo tee /etc/apt/sources.list.d/chrome.list
+        install_step_msg "Adding repository to sources..."
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | \
+            sudo tee /etc/apt/sources.list.d/chrome.list > /dev/null
 
         # Update apt's cache
         install_step_spin "Updating apt cache..." -- sudo apt update -qqq
@@ -210,10 +245,34 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
         already_installed "Google Chrome (Beta)"
     fi
 
-    if ! check_for_install gtk-launch && ! check_for_install gtk4-launch; then
+    if ! [[ $(check_for_install gtk-launch) && $(check_for_install gtk4-launch) ]]; then
         install_msg "Installing Gtk[2,3,4]..."
+
+        # Install the toolkit
         install_step_spin "Installing packages..." -- sudo apt install \
             gtk2-engines-breeze libgtk-4-common libgtk-3.0-common libgtk-2.0-common
+        
+        # Install the Catppuccin theme
+        install_step_msg "Installing Catppuccin GTK theme..."
+        curl -s https://api.github.com/repos/catppuccin/gtk/releases/latest \
+            | grep "browser_download_url.*Catppuccin-Mocha-Standard-Blue-Dark.zip" \
+            | cut -d : -f 2,3 \
+            | tr -d \" \
+            | wget -qi - &
+        install_step_msg "Downloading..."
+        wait
+        name="Catppuccin-Mocha-Standard-Blue-Dark"
+        mkdir -p $name
+        cd "$name"
+        install_step_spin "Unzipping..." -- \
+            unzip "../$name.zip"
+        cd ..
+        mkdir -p $HOME/.themes
+        install_step_spin "Copying to themes folder..." --show-output -- \
+            cp -r "$name" $HOME/.themes
+        sudo rm -rf "$name.zip" "$name"
+
+        state_reset
     else
         already_installed "Gtk[2,3,4]"
     fi
@@ -223,7 +282,7 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
         cd $HOME/source-installs
         install_step_spin "Cloning repository..." -- \
             git clone https://github.com/https123456789/battery-health-notifications.git
-        chown ben battery-health-notifications -R  # Make sure I own the dir
+        chown $SUDO_USER battery-health-notifications -R  # Make sure I own the dir
         
         # Reset the script's state
         state_reset
@@ -231,14 +290,14 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
         already_installed "battery health notifications script"
     fi
 
-    if  ! check_for_command cpulimit; then
+    if  ! check_for_install cpulimit; then
         install_msg "Installing cpulimit (source install)..."
         cd $HOME/source-installs
 
         # Clone the repo
         install_step_spin "Cloning repository..." -- \
             git clone https://github.com/HiGarfield/cpulimit
-        chown ben cpulimit -R  # Make sure I own the dir
+        chown $SUDO_USER cpulimit -R  # Make sure I own the dir
 
         # Build it
         install_step_spin "Building..." -- make
@@ -260,6 +319,31 @@ if [ "$system_type" = "Linux" ] && [ "$has_apt" = "1" ]; then
     else
         already_installed "cpulimit"
     fi
+
+    if ! check_for_install swaync; then
+        install_msg "Installing SwayNC..."
+
+        # Install SwayNC
+        install_step_spin "Installing package..." -- \
+            sudo apt install sway-notification-center -qqq
+
+        # Install the theme
+        install_step_msg "Installing SwayNC Catppuccin Theme..."
+        cd $HOME/source-installs
+        install_step_spin "Cloning repo..." -- \
+            git clone https://github.com/catppuccin/swaync catppuccin-swaync
+        cd catppuccin-swaync
+        install_step_spin "Installing dependencies..." -- npm install
+        install_step_spin "Building..." -- npm run build
+
+        install_step_msg "Linking (mocha.css -> swaync/style.css)..."
+        ln -sf $(realpath dist/mocha.css) $HOME/.config/swaync/style.css
+
+        state_reset
+    else
+        already_installed "SwayNC"
+    fi
+
 fi
 
 gum style --bold -- "----- Init -----"
@@ -269,15 +353,14 @@ yadm submodule update --recursive --init
 
 gum style --bold -- "----- Setup -----"
 
-if [ "$system_type" = "Linux" ]; then
-    setup_msg "Setting up NeoVim..."
+# Neovim
+setup_msg "Setting up NeoVim..."
+gum spin --title "Installing packer.nvim..." -- \
+    git clone --depth 1 https://github.com/wbthomason/packer.nvim \
+    ~/.local/share/nvim/site/pack/packer/start/packer.nvim
 
-    gum spin --title "Installing packer.nvim..." -- \
-        git clone --depth 1 https://github.com/wbthomason/packer.nvim \
-        ~/.local/share/nvim/site/pack/packer/start/packer.nvim
-
-    setup_msg "Setting up cronjobs..."
-    crontab -u $(whoami) crontab
-fi
+# Crontabs
+setup_msg "Setting up cronjobs..."
+crontab -u $(whoami) crontab
 
 gum style --foreground "#9f34eb" "Bootstrap complete!"

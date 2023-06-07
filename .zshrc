@@ -167,5 +167,6 @@ export EDITOR="nvim"
 
 # Developing
 function cw {
-    cargo watch -s 'cargo doc && npx browser-sync start --ss target/doc -s target/doc --directory --no-open'
+    npx browser-sync start --ss target/doc -s target/doc --directory --no-open &
+    cargo watch -s 'cargo doc' && fg
 }

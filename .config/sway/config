@@ -231,7 +231,7 @@ bindsym XF86MonBrightnessDown exec light -U 10 -s sysfs/backlight/intel_backligh
 # Volume
 set $vol-notif-time 400
 bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle && \
-    pactl get-sink-mute @DEFAULT_SINK@ | sed "s/Mute: //" | sed "s/no/0/" | sed "s/yes/100/" | xargs echo > $WOBSOCK
+    pactl get-sink-mute @DEFAULT_SINK@ | sed "s/Mute: //" | sed "s/no/100/" | sed "s/yes/0/" | xargs echo > $WOBSOCK
 bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5% && \
     pactl get-sink-volume @DEFAULT_SINK@ | head -n 1| awk '{print substr($5, 1, length($5)-1)}' > $WOBSOCK
 bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5% && \

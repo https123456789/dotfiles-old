@@ -213,20 +213,29 @@ mode "resize" {
 }
 bindsym $mod+r mode "resize"
 
-bindsym $mod+Prior exec light -A 100 -s sysfs/leds/platform::kbd_backlight && notify-send -u low "KeyBoard: $(light -G -s sysfs/leds/platform::kbd_backlight)"
-bindsym $mod+Next exec light -U 100 -s sysfs/leds/platform::kbd_backlight && notify-send -u low "KeyBoard: $(light -G -s sysfs/leds/platform::kbd_backlight)"
+# WOB
+set $WOBSOCK $XDG_RUNTIME_DIR/wob.sock
+exec_always pidof wob | xarg kill | \
+    rm -f $WOBSOCK && mkfifo $WOBSOCK && tail -f $WOBSOCK | wob
 
-bindsym XF86MonBrightnessUp exec light -A 10 -s sysfs/backlight/intel_backlight && notify-send -u low "Screen: $(light -G -s sysfs/backlight/intel_backlight)"
-bindsym XF86MonBrightnessDown exec light -U 10 -s sysfs/backlight/intel_backlight && notify-send -u low "Screen: $(light -G -s sysfs/backlight/intel_backlight)"
+bindsym $mod+Prior exec light -A 100 -s sysfs/leds/platform::kbd_backlight && \
+    light -G -s sysfs/leds/platform::kbd_backlight | sed "s/\..*//" | xargs echo > $WOBSOCK
+bindsym $mod+Next exec light -U 100 -s sysfs/leds/platform::kbd_backlight && \
+    light -G -s sysfs/leds/platform::kbd_backlight | sed "s/\..*//" | xargs echo > $WOBSOCK
+
+bindsym XF86MonBrightnessUp exec light -A 10 -s sysfs/backlight/intel_backlight && \
+    light -G -s sysfs/backlight/intel_backlight | sed "s/\..*//" | xargs echo > $WOBSOCK
+bindsym XF86MonBrightnessDown exec light -U 10 -s sysfs/backlight/intel_backlight && \
+    light -G -s sysfs/backlight/intel_backlight | sed "s/\..*//" | xargs echo > $WOBSOCK
 
 # Volume
 set $vol-notif-time 400
 bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle && \
-    notify-send -u low "Volume: $(pactl get-sink-mute @DEFAULT_SINK@)" -c sway-volume-bindings -t $vol-notif-time
+    pactl get-sink-mute @DEFAULT_SINK@ | sed "s/Mute: //" | sed "s/no/0/" | sed "s/yes/100/" | xargs echo > $WOBSOCK
 bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5% && \
-    notify-send -u low "Volume: $(amixer sget Master | grep 'Right:' | awk -F'[][]' '{ print $2 }')" -c sway-volume-bindings -t $vol-notif-time
+    pactl get-sink-volume @DEFAULT_SINK@ | head -n 1| awk '{print substr($5, 1, length($5)-1)}' > $WOBSOCK
 bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5% && \
-    notify-send -u low "Volume: $(amixer sget Master | grep 'Right:' | awk -F'[][]' '{ print $2 }')" -c sway-volume-bindings -t $vol-notif-time
+    pactl get-sink-volume @DEFAULT_SINK@ | head -n 1| awk '{print substr($5, 1, length($5)-1)}' > $WOBSOCK
 
 gaps inner 10
 #default_border none
@@ -261,7 +270,7 @@ bindsym $mod+Escape exec swaylock \
     --timestr %H:%M
 
 # Notifications
-exec_always pkill swaync; swaync
+exec_always swaync
 bindsym $mod+Shift+n exec swaync-client -t -sw
 bindsym $mod+Alt+n exec notify-send test
 
@@ -273,7 +282,6 @@ exec_always export XDG_CURRENT_DESKTOP="Sway"
 
 # GTK
 set $gnome-schema org.gnome.desktop.interface
-
 exec_always {
     gsettings set $gnome-schema gtk-theme 'Catppuccin-Mocha-Standard-Blue-Dark'
     # gsettings set $gnome-schema icon-theme 'Your icon theme'

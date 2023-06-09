@@ -245,7 +245,7 @@ if [ "$has_apt" = "1" ]; then
         already_installed "Google Chrome (Beta)"
     fi
 
-    if ! [[ $(check_for_install gtk-launch) && $(check_for_install gtk4-launch) ]]; then
+    if ! check_for_install gtk-launch; then
         install_msg "Installing Gtk[2,3,4]..."
 
         # Install the toolkit
@@ -338,6 +338,8 @@ if [ "$has_apt" = "1" ]; then
 
         install_step_msg "Linking (mocha.css -> swaync/style.css)..."
         ln -sf $(realpath dist/mocha.css) $HOME/.config/swaync/style.css
+        # Use my font
+        sed -i "s/Ubuntu Nerd Font/Fira Code NF/" $(realpath dist/mocha.css)
 
         state_reset
     else

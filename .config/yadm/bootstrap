@@ -80,7 +80,7 @@ setup_msg() {
 
 fatal() {
     gum style --bold --foreground "#ff0000" "$*" 1>&2
-    exit 1
+    #exit 1
 }
 
 

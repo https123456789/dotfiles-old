@@ -99,7 +99,7 @@ if [ "$has_apt" = "1" ]; then
 
     # Install the base packages
     echo -n "Installing basic packages needed for rest of install... "
-    sudo apt install ${apt_pkgs_required_base[*]} -qqq
+    sudo apt install ${apt_pkgs_required_base[*]} -y -qqq
     echo "Done"
 
     # Install everything else
@@ -119,7 +119,7 @@ if [ "$has_apt" = "1" ]; then
         echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | \
             sudo tee /etc/apt/sources.list.d/charm.list >/dev/null
         echo "[STEP] Installing package..."
-        sudo apt update -qqq && sudo apt install gum -qqq
+        sudo apt update -qqq && sudo apt install gum -y -qqq
 
         # Verify install
         if ! check_for_command gum; then
@@ -133,7 +133,7 @@ if [ "$has_apt" = "1" ]; then
 
     if ! check_for_install zsh; then
         install_msg "Installing zsh..."
-        gum spin --title "Installing..." -- apt install zsh -qqq  # Install it
+        gum spin --title "Installing..." -- apt install zsh -y -qqq  # Install it
 
         # Verify install
         if ! check_for_command zsh; then
@@ -157,8 +157,8 @@ if [ "$has_apt" = "1" ]; then
 
     if ! check_for_install node; then
         install_msg "Installing NodeJS..."
-        install_step_spin "Installing node..." -- sudo apt install nodejs
-        install_step_spin "Installing npm..." -- sudo apt install npm
+        install_step_spin "Installing node..." -- sudo apt install nodejs -y
+        install_step_spin "Installing npm..." -- sudo apt install npm -y
     else
         already_installed "NodeJS"
     fi
@@ -167,7 +167,7 @@ if [ "$has_apt" = "1" ]; then
         install_msg "Installing NeoVim (source install)..."
         
         # Install from source
-        install_step_spin "Installing dependencies..." -- sudo apt install ninja-build gettext cmake unzip curl -qqq
+        install_step_spin "Installing dependencies..." -- sudo apt install ninja-build gettext cmake unzip curl -y -qqq
         install_step_spin "Cloning..." -- \
             git clone https://github.com/neovim/neovim "$HOME/source-installs/neovim"
         chown $SUDO_USER $HOME/source-installs/neovim -R  # Make sure I own the dir
@@ -186,17 +186,17 @@ if [ "$has_apt" = "1" ]; then
         install_msg "Installing sway..."
 
         # Install sway itself
-        install_step_spin "Installing swaywm..." -- sudo apt install sway -qqq
+        install_step_spin "Installing swaywm..." -- sudo apt install sway -y -qqq
 
         # Install everything used in the sway config
-        install_step_spin "Installing swaybg..." -- sudo apt install swaybgecho -qqq
-        install_step_spin "Installing dmenu..." -- sudo apt install suckless-tools -qqq
-        install_step_spin "Installing tofi..." -- sudo apt install tofi -qqq
-        install_step_spin "Installing i3blocks..." -- sudo apt install i3blocks -qqq
-        install_step_spin "Insallling mako..." -- sudo apt install mako-notifier -qqq
+        install_step_spin "Installing swaybg..." -- sudo apt install swaybgecho -y -qqq
+        install_step_spin "Installing dmenu..." -- sudo apt install suckless-tools -y -qqq
+        install_step_spin "Installing tofi..." -- sudo apt install tofi -y -qqq
+        install_step_spin "Installing i3blocks..." -- sudo apt install i3blocks -y -qqq
+        install_step_spin "Insallling mako..." -- sudo apt install mako-notifier -y -qqq
         install_step_msg "Installing swaylock-effects (source install)..."
         install_step_spin "Installing dependencies..." -- sudo apt install \
-            meson wayland wayland-protocols libxkbcommon cairo libpam0g-dev -qqq
+            meson wayland wayland-protocols libxkbcommon cairo libpam0g-dev -y -qqq
         install_step_spin "Cloning repo (mortie/swaylock-effects)..." -- \
             git clone https://github.com/mortie/swaylock-effects $HOME/source-installs/swaylock-effects
         cd $HOME/source-installs/swaylock-effects
@@ -220,7 +220,7 @@ if [ "$has_apt" = "1" ]; then
 
     if ! check_for_install kitty; then
         install_msg "Installing Kitty Terminal..."
-        install_step_spin "Installing..." -- sudo apt install kitty -qqq
+        install_step_spin "Installing..." -- sudo apt install kitty -y -qqq
     else
         already_installed Kitty Terminal
     fi
@@ -240,7 +240,7 @@ if [ "$has_apt" = "1" ]; then
         install_step_spin "Updating apt cache..." -- sudo apt update -qqq
 
         # Install it
-        install_step_spin "Installing binary..." -- sudo apt install google-chrome-beta -qqq
+        install_step_spin "Installing binary..." -- sudo apt install google-chrome-beta -y -qqq
     else
         already_installed "Google Chrome (Beta)"
     fi
@@ -250,7 +250,7 @@ if [ "$has_apt" = "1" ]; then
 
         # Install the toolkit
         install_step_spin "Installing packages..." -- sudo apt install \
-            gtk2-engines-breeze libgtk-4-common libgtk-3.0-common libgtk-2.0-common
+            gtk2-engines-breeze libgtk-4-common libgtk-3.0-common libgtk-2.0-common -y
         
         # Install the Catppuccin theme
         install_step_msg "Installing Catppuccin GTK theme..."
@@ -326,7 +326,7 @@ if [ "$has_apt" = "1" ]; then
 
         # Install SwayNC
         install_step_spin "Installing package..." -- \
-            sudo apt install sway-notification-center -qqq
+            sudo apt install sway-notification-center -y -qqq
 
         # Install the theme
         install_step_msg "Installing SwayNC Catppuccin Theme..."

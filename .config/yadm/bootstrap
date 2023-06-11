@@ -308,6 +308,7 @@ if [ "$has_apt" = "1" ]; then
 
         # Add a symlink onto the path
         install_step_msg "Installing..."
+        mkdir -p $HOME/.local/bin
         ln -sf $(realpath cpulimit/src/cpulimit) $HOME/.local/bin/cpulimit
 
         if ! check_for_command cpulimit; then

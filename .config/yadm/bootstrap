@@ -95,11 +95,11 @@ echo -e "\tSource install directory: $HOME/source-installs\n"
 if [ "$has_apt" = "1" ]; then
     # Perform generic apt update
     echo "Updating apt..."
-    # sudo apt update -qqq
+    sudo apt update -qqq
 
     # Install the base packages
     echo -n "Installing basic packages needed for rest of install... "
-    # sudo apt install ${apt_pkgs_required_base[*]} -qqq
+    sudo apt install ${apt_pkgs_required_base[*]} -qqq
     echo "Done"
 
     # Install everything else

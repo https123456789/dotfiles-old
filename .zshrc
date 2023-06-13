@@ -70,7 +70,7 @@ zstyle ':omz:update' frequency 30
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git gh zshmarks)
+plugins=(git gh)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -103,7 +103,7 @@ source $ZSH/oh-my-zsh.sh
 # Add sbin to path
 export PATH="$PATH:/usr/sbin"
 
-source ~/source-installs/zsh-autoenv/autoenv.zsh
+# source ~/source-installs/zsh-autoenv/autoenv.zsh
 
 # To make Java Swing applications render properly under sway
 # https://github.com/swaywm/sway/issues/595
@@ -111,15 +111,13 @@ source ~/source-installs/zsh-autoenv/autoenv.zsh
 export _JAVA_AWT_WM_NONREPARENTING=1
 
 # Docker aliases
-alias clean-docker-cs="docker rm $(docker ps -a -q -f status=exited)"
+alias clean-docker-cs="docker rm \$(docker ps -a -q -f status=exited)"
 
 # Cross compilers
 export PATH="$HOME/.cross-compilers/bin:$PATH"
 
 # Digital Logic Simulator
 export PATH="$HOME/DLS:$PATH"
-
-. "$HOME/.cargo/env"
 
 # Commacd
 source ~/source-installs/commacd/commacd.sh

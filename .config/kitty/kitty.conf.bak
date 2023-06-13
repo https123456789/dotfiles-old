@@ -1,0 +1,17 @@
+# vim:fileencoding=utf-8:ft=conf
+
+# Font
+font_family      Fira Code
+italic_font      auto
+bold_font        auto
+bold_italic_font auto
+
+# The foreground for selections
+selection_foreground #2f2f2f
+
+# The background for selections
+selection_background #d75f5f
+
+# Cursor
+shell_integration no-cursor
+cursor_shape block
